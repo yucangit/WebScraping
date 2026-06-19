@@ -221,7 +221,8 @@ public class WebScrapingHisseSenedi {
     public static void webScrapingWithSelenium3() {
     	//Durum : Calisiyor
     	//Tarih : 19.06.2026
-    	//Diger : Bazen peş peşe birkaç defa calistirildiginda exception olusuyor. ()
+    	//Diger : Bazen peş peşe birkaç defa calistirildiginda exception olusuyor. 
+        //        Olusan hata : ("HTTP/1.1 header parser received no bytes")
     	
         // 1. Configure Chrome options for scraping
         ChromeOptions options = new ChromeOptions();
