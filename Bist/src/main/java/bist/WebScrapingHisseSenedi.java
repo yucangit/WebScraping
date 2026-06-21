@@ -3,7 +3,7 @@ package bist;
 
 import yahoofinance.Stock;
 import yahoofinance.YahooFinance;
-import java.io.IOException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
@@ -26,6 +26,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+
+import java.time.LocalDate;
 
 
 public class WebScrapingHisseSenedi {
@@ -285,11 +287,12 @@ public class WebScrapingHisseSenedi {
             List<String> names = new ArrayList<String>();
             
             
-        	System.out.printf("%4s    %-50s    %8s    %8s   %8s  %8s   %8s \n",   "", "Firma Adi", "Son", "Yüksek", "Düşük", "Fark", "Fark%");  //"Hac.", "Zaman"
+        	System.out.printf("%4s    %-50s    %8s    %8s   %8s  %8s   %8s   %8s   %8s \n",   "", "Firma Adi", "Son", "Yüksek", "Düşük", "Fark", "Fark", "Hac.", "Zaman");
         	
             //Adding column1 elements to the list
-        	int i=0;
-            for (WebElement row : rows) {
+        	int i=0;        	
+            for (WebElement row : rows) 
+            {
             	names.add(row.getText());
             	List<WebElement> list = row.findElements(By.tagName("td"));
             	String [] arr = 
@@ -299,25 +302,23 @@ public class WebScrapingHisseSenedi {
     				list.get(3).getText(),   //Yüksek
     				list.get(4).getText(),   //Düşük
     				list.get(5).getText(),   //Fark
-    				list.get(6).getText(),   //Fark %
+    				list.get(6).getText().replace("%", ""),    //Fark.  '%' karakteri olmadan veritabanına aktarılsın.
     				list.get(7).getText(),   //Hac.
-    				list.get(8).getText()    //Zaman
+    				list.get(8).getText().replace('/', '.')+"." + LocalDate.now().getYear()    //Yil bilgisi gelmediği için biz ekliyoruz. Zaman
             	};
             	
-            	System.out.printf("%4d.  %-50s     %8s   %8s   %8s   %8s   %8s  \n", ++i, arr[0], arr[1], arr[2], arr[3], arr[4], arr[5]);
+            	System.out.printf("%4d.  %-50s     %8s   %8s   %8s   %8s   %8s   %8s   %8s  \n", ++i, arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7]);
             	
             	String sqlSorgusu = "INSERT INTO hisse_senedi(Firma_Adi, Son, Yuksek, Dusuk, Fark, Fark_yuzde, Hac, Zaman)" +           
                         " VALUES('" + arr[0] + "','" +  arr[1] + "','" + arr[2] + "','" + arr[3] + "','" + arr[4] + "','" + arr[5] + "','" + arr[6] + "','" + arr[7] +"')";
             	
-            	System.out.println(sqlSorgusu);
+            	//System.out.println(sqlSorgusu);
             	
                 int kayitSayisi = statement.executeUpdate(sqlSorgusu);
-                System.out.printf("%d kayıt eklendi.%n", kayitSayisi);
+                //System.out.printf("%d kayıt eklendi.%n", kayitSayisi);
             	
             }
-           
-            
-
+                       
         } 
         catch (Exception e) 
         {
