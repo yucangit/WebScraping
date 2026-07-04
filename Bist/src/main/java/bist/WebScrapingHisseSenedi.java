@@ -106,6 +106,88 @@ public class WebScrapingHisseSenedi {
         }
     }
 	
+	public static void webScrapingWithJSoupUzmanPara() {
+        // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
+        
+		//Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
+		// ilk Tarih : 3.1.2000
+
+        try {
+        	
+        	
+        	//System.setProperty("http.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+        	//System.setProperty("https.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+        	
+        	
+        	//String url = "https://tr.investing.com/equities";
+        	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=1";
+            // Web sitesine bağlanma ve HTML'i çekme
+            Document doc = Jsoup.connect(url)                    
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+                    .header("Accept-Language", "en-US,en;q=0.9")
+                    .header("Accept-Encoding", "gzip, deflate, br")
+                    .header("Connection", "keep-alive")
+                    //.header("Referer", "https://google.com")
+                    .header("Referer", url)
+                    .timeout(10000)
+                    .ignoreHttpErrors(true) 
+                    .get();
+
+            // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
+            // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
+            
+            System.out.println(doc.title());
+            
+            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
+            Element table = doc.select("table").first();                     //verinin kendisi
+            Element pager = doc.select(".pager").first();                    //
+            
+            Elements rows = table.getElementsByTag("tr");
+                        
+            for(Element col: rows.get(0).getElementsByTag("th")) 
+            {
+            	System.out.printf("%15s", col.text());
+            }
+            
+            for(int i=1; i<rows.size(); i++) 
+            {
+            	Element row = rows.get(i);
+            	Elements cols = row.getElementsByTag("td");
+            
+            	System.out.println("");
+            	for(int j=0; j<cols.size(); j++) 
+            	{
+            		String text = cols.get(j).text();
+            		System.out.printf("%15s", text + "  ");
+            	}
+            }
+            
+            /*
+            if (!fiyatElementi.isEmpty()) {
+                String fiyat = fiyatElementi.text();
+                System.out.println("Hisse Güncel Fiyatı: " + fiyat);
+            } else {
+                System.out.println("Fiyat elementi bulunamadı, CSS seçici güncellenmeli.");
+            }
+            */
+            //System.out.println(detSearch.html());
+            //System.out.println(table.html());
+            //System.out.println(pager.html());
+            
+            
+           // System.out.println(doc.html());
+            
+            //System.out.println(doc.title());
+
+        } 
+        catch (Exception e) 
+        {
+        	e.printStackTrace();
+            //System.err.println("Bağlantı hatası: " + e.getMessage());
+        }
+    }
+	
     public static void webScrapingWithSelenium() {
         // 1. Configure Chrome options for scraping
         ChromeOptions options = new ChromeOptions();
@@ -338,7 +420,8 @@ public class WebScrapingHisseSenedi {
     }
     
 	public static void main(String[] args) {
-		webScrapingWithSelenium3();
+		//webScrapingWithSelenium3();
+		webScrapingWithJSoupUzmanPara();
 
 	}
 
