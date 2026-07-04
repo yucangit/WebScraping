@@ -128,6 +128,29 @@ public class WebScrapingHisseSenedi {
         // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
 	}
 	
+	
+	public static Connection connectPostgres() 
+	{
+	    //Database parameters
+	    String jdbcUrl = "jdbc:postgresql://localhost:5432/postgres";
+	    String user = "postgres";
+	    String pass = "123456";
+	    Connection conn = null;
+		    
+	    try 
+	    {	    
+	    	conn = DriverManager.getConnection(jdbcUrl, user, pass);
+	        System.out.println("Java JDBC bağlantısı başarıyla gerçekleşti.");
+	    	//Statement statement = connection.createStatement();
+	    }
+	    catch (Exception e) 
+	    {
+			e.printStackTrace();
+		}
+	    
+	    return conn;
+    }
+    
 	public static void webScrapingWithJSoupUzmanPara() {
         // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
         
@@ -140,6 +163,8 @@ public class WebScrapingHisseSenedi {
         	//System.setProperty("http.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
         	//System.setProperty("https.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
         	
+        	Connection conn = connectPostgres();        	
+        	Statement statement = conn.createStatement();
         	
         	//String url = "https://tr.investing.com/equities";
         	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
@@ -148,7 +173,7 @@ public class WebScrapingHisseSenedi {
             
          // Convert Date to Calendar
             Calendar cal1 = Calendar.getInstance();            
-            cal1.set(2000, 1,1);  
+            cal1.set(2000, 1,5);  
             Calendar cal2 = Calendar.getInstance();
             cal2.setTime(new Date());
             
@@ -198,6 +223,7 @@ public class WebScrapingHisseSenedi {
 		            Elements rows = table.getElementsByTag("tr");
 		            	            	            
 		            
+		            //Table header kısmı
 		            if(pageNumber==1) 
 		            {
 			            for(Element col: rows.get(0).getElementsByTag("th")) 
@@ -207,20 +233,50 @@ public class WebScrapingHisseSenedi {
 			            System.out.printf("%15s\n", "Tarih");
 		            }
 	
-		            
+		            //Table data kısmı
 		            for(int i=1; i<rows.size(); i++) 
 		            {
 		            	Element row = rows.get(i);
 		            	Elements cols = row.getElementsByTag("td");
+		            	
+		            	String [] arr = //new String[10];
+		            	
+		                	{
+		                		cols.get(0).text(),   //Firma Adı 
+		                		cols.get(1).text(),   //Son
+		                		cols.get(2).text(),   //dun
+		                		cols.get(3).text(),   //yuzde
+		                		cols.get(4).text(),   //yuksek
+		                		cols.get(5).text(),    //dusuk,
+		                		cols.get(6).text(),    //Ağ. Ort.,
+		                		cols.get(7).text(),   //Hacim lot
+		                		cols.get(8).text(),   //Hacim Bin TL
+		                		"",   //zaman
+		                		""  //url		                				                		
+		                	};
+		            	
+		            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, zaman, url) values(";
 		            
 		            	//System.out.println("");
-		            	for(int j=0; j<cols.size(); j++) 
+		            	for(int j=0; j<cols.size(); j++)   //8 kolon var
 		            	{
-		            		String text = cols.get(j).text();
-		            		System.out.printf("%15s", text + "  ");
+		            		arr[i] = cols.get(j).text();
+		            		sql += "'"+ arr[j] +"', ";
+		            		//String text = cols.get(j).text();
+		            		System.out.printf("%15s", arr[j] + "  ");
 		            	}
+		            	String zaman = gun + "." + ay + "." + yil;
+		            	arr[9] = zaman;
+		            	arr[10] = url;
 		            	
-		            	System.out.printf("%15s", gun + "." + ay + "." + yil);
+		            	sql += "'" + zaman + "','" + url + "')";
+		            	
+		            	System.out.printf("%15s\n", zaman);
+		            	
+		            	System.out.println("sql =" + sql);
+		            	
+		            	//int kayitSayisi = statement.executeUpdate(sql);
+		            	statement.executeUpdate(sql);
 		            }
 		            
 		            if(rows.size()<2) 
@@ -385,8 +441,6 @@ public class WebScrapingHisseSenedi {
         String jdbcUrl = "jdbc:postgresql://localhost:5439/postgres";
         String user = "postgres";
         String pass = "123456";
-
-
         
         try {
         	
@@ -422,8 +476,7 @@ public class WebScrapingHisseSenedi {
             
             //List<WebElement> namesElements = driver.findElements(By.cssSelector("tbody>tr>td:nth-child(1)"));
             System.out.println("size of names elements : " + rows.size());
-                       
-            
+                                   
             List<String> names = new ArrayList<String>();
             
             
