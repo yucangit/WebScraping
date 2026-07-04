@@ -7,6 +7,7 @@ import yahoofinance.YahooFinance;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -111,6 +112,9 @@ public class WebScrapingHisseSenedi {
 	
 	public static Document getWebData(String url) throws Exception 
 	{
+    	//System.setProperty("http.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+    	//System.setProperty("https.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+		
 		Document doc = Jsoup.connect(url)                    
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
@@ -127,9 +131,8 @@ public class WebScrapingHisseSenedi {
         // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
         // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
 	}
-	
-	
-	public static Connection connectPostgres() 
+		
+	public static Connection getPostgresConnection() 
 	{
 	    //Database parameters
 	    String jdbcUrl = "jdbc:postgresql://localhost:5432/postgres";
@@ -157,13 +160,9 @@ public class WebScrapingHisseSenedi {
 		//Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
 		// ilk Tarih : 3.1.2000
 
-        try {
+        try {        	       
         	
-        	
-        	//System.setProperty("http.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-        	//System.setProperty("https.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-        	
-        	Connection conn = connectPostgres();        	
+        	Connection conn = getPostgresConnection();        	
         	Statement statement = conn.createStatement();
         	
         	//String url = "https://tr.investing.com/equities";
@@ -171,31 +170,62 @@ public class WebScrapingHisseSenedi {
             // Web sitesine bağlanma ve HTML'i çekme
             Document doc = null;
             
+            /*
          // Convert Date to Calendar
             Calendar cal1 = Calendar.getInstance();            
-            cal1.set(2000, 1,5);  
+            cal1.set(2000, 3, 1);  
             Calendar cal2 = Calendar.getInstance();
             cal2.setTime(new Date());
+            */
+            
+            LocalDate date1 = LocalDate.of(2000, 1, 2);
+            LocalDate date2 = LocalDate.now();
             
             int gun, ay, yil;
             
             boolean hasNextPage=true;            
             int pageNumber = 1;
+            String aktarimZamani = null;
+            
+         // 2. Define your desired date pattern
+            SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+            
+            // 3. Convert Calendar to Date, then format to String
+            //String dateString = formatter.format(cal1.getTime());
             
             
-            while(cal1.before(cal2)) 
+            //while(cal1.before(cal2)) 
+            while(date1.isBefore(date2))
             {
+            	/*
             	int day =  cal1.get(Calendar.DAY_OF_WEEK);;
-            	if( day==6 || day==7) 
+            	if( day == Calendar.SATURDAY || day == Calendar.SUNDAY) 
             	{
             		cal1.add(Calendar.DATE, 1);
-            		day =  cal1.get(Calendar.DAY_OF_WEEK);
+            		day =  cal1.get(Calendar.DAY_OF_MONTH);
             		continue;            	
-            	}
-            	
-            	gun = cal1.get(Calendar.DAY_OF_WEEK);
+            	}            	            	
+            	gun = cal1.get(Calendar.DAY_OF_MONTH);
             	ay = cal1.get(Calendar.MONTH);
             	yil = cal1.get(Calendar.YEAR);
+            	*/
+            	
+            	
+            	DayOfWeek day =  date1.getDayOfWeek();
+            	if( day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) 
+            	{
+            		date1 = date1.plusDays(1);
+            		day =  date1.getDayOfWeek();
+            		continue;            	
+            	}            	            	
+            	gun = date1.getDayOfMonth();
+            	ay = date1.getMonthValue();
+            	yil = date1.getYear();
+            	
+            	
+            	if(yil==2001) break;
+            	
+            	aktarimZamani = formatter.format( Calendar.getInstance().getTime() );
             	
             	pageNumber = 0;
             	hasNextPage = true; 
@@ -251,29 +281,31 @@ public class WebScrapingHisseSenedi {
 		                		cols.get(6).text(),    //Ağ. Ort.,
 		                		cols.get(7).text(),   //Hacim lot
 		                		cols.get(8).text(),   //Hacim Bin TL
-		                		"",   //zaman
+		                		"",   //zaman,
+		                		"",   //veri aktarım zamanı
 		                		""  //url		                				                		
 		                	};
 		            	
-		            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, zaman, url) values(";
+		            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, veri_zaman, aktarim_zamani, url) values(";
 		            
 		            	//System.out.println("");
 		            	for(int j=0; j<cols.size(); j++)   //8 kolon var
 		            	{
-		            		arr[i] = cols.get(j).text();
+		            		arr[j] = cols.get(j).text();
 		            		sql += "'"+ arr[j] +"', ";
 		            		//String text = cols.get(j).text();
 		            		System.out.printf("%15s", arr[j] + "  ");
 		            	}
-		            	String zaman = gun + "." + ay + "." + yil;
-		            	arr[9] = zaman;
-		            	arr[10] = url;
+		            	String veri_zamani = gun + "." + ay + "." + yil;
+		            	arr[9]  = "to_date('" + veri_zamani + "','dd.MM.yyyy')";
+		            	arr[10] = "to_timestamp('" + aktarimZamani + "','dd.MM.yyyy HH24:MI:SS')";  
+		            	arr[11] = url;
 		            	
-		            	sql += "'" + zaman + "','" + url + "')";
+		            	sql += arr[9] + ", " + arr[10] +", '" + url + "')";
 		            	
-		            	System.out.printf("%15s\n", zaman);
+		            	System.out.printf("%15s\n", veri_zamani);
 		            	
-		            	System.out.println("sql =" + sql);
+		            	//System.out.println("sql = " + sql);
 		            	
 		            	//int kayitSayisi = statement.executeUpdate(sql);
 		            	statement.executeUpdate(sql);
@@ -283,7 +315,8 @@ public class WebScrapingHisseSenedi {
 		            	hasNextPage = false;
             	}
 	            
-            cal1.add(Calendar.DATE, 1);
+            //cal1.add(Calendar.DATE, 1);
+            date1 = date1.plusDays(1);
             //System.out.println(detSearch.html());
             //System.out.println(table.html());
             //System.out.println(pager.html());
@@ -533,6 +566,8 @@ public class WebScrapingHisseSenedi {
 	public static void main(String[] args) {
 		//webScrapingWithSelenium3();
 		webScrapingWithJSoupUzmanPara();
+		
+		//System.out.println(Calendar.getInstance().getTime());
 
 	}
 
