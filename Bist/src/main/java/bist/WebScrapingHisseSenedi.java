@@ -23,8 +23,11 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import java.time.LocalDate;
@@ -106,6 +109,25 @@ public class WebScrapingHisseSenedi {
         }
     }
 	
+	public static Document getWebData(String url) throws Exception 
+	{
+		Document doc = Jsoup.connect(url)                    
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+                .header("Accept-Language", "en-US,en;q=0.9")
+                .header("Accept-Encoding", "gzip, deflate, br")
+                .header("Connection", "keep-alive")
+                //.header("Referer", "https://google.com")
+                .header("Referer", url)
+                .timeout(10000)
+                .ignoreHttpErrors(true) 
+                .get();
+
+		return doc;
+        // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
+        // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
+	}
+	
 	public static void webScrapingWithJSoupUzmanPara() {
         // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
         
@@ -120,72 +142,108 @@ public class WebScrapingHisseSenedi {
         	
         	
         	//String url = "https://tr.investing.com/equities";
-        	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=1";
+        	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
             // Web sitesine bağlanma ve HTML'i çekme
-            Document doc = Jsoup.connect(url)                    
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-                    .header("Accept-Language", "en-US,en;q=0.9")
-                    .header("Accept-Encoding", "gzip, deflate, br")
-                    .header("Connection", "keep-alive")
-                    //.header("Referer", "https://google.com")
-                    .header("Referer", url)
-                    .timeout(10000)
-                    .ignoreHttpErrors(true) 
-                    .get();
-
-            // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
-            // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
+            Document doc = null;
             
-            System.out.println(doc.title());
+         // Convert Date to Calendar
+            Calendar cal1 = Calendar.getInstance();            
+            cal1.set(2000, 1,1);  
+            Calendar cal2 = Calendar.getInstance();
+            cal2.setTime(new Date());
             
-            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
-            Element table = doc.select("table").first();                     //verinin kendisi
-            Element pager = doc.select(".pager").first();                    //
+            int gun, ay, yil;
             
-            Elements rows = table.getElementsByTag("tr");
-                        
-            for(Element col: rows.get(0).getElementsByTag("th")) 
+            boolean hasNextPage=true;            
+            int pageNumber = 1;
+            
+            
+            while(cal1.before(cal2)) 
             {
-            	System.out.printf("%15s", col.text());
-            }
-            
-            for(int i=1; i<rows.size(); i++) 
-            {
-            	Element row = rows.get(i);
-            	Elements cols = row.getElementsByTag("td");
-            
-            	System.out.println("");
-            	for(int j=0; j<cols.size(); j++) 
+            	int day =  cal1.get(Calendar.DAY_OF_WEEK);;
+            	if( day==6 || day==7) 
             	{
-            		String text = cols.get(j).text();
-            		System.out.printf("%15s", text + "  ");
+            		cal1.add(Calendar.DATE, 1);
+            		day =  cal1.get(Calendar.DAY_OF_WEEK);
+            		continue;            	
             	}
-            }
-            
-            /*
-            if (!fiyatElementi.isEmpty()) {
-                String fiyat = fiyatElementi.text();
-                System.out.println("Hisse Güncel Fiyatı: " + fiyat);
-            } else {
-                System.out.println("Fiyat elementi bulunamadı, CSS seçici güncellenmeli.");
-            }
-            */
+            	
+            	gun = cal1.get(Calendar.DAY_OF_WEEK);
+            	ay = cal1.get(Calendar.MONTH);
+            	yil = cal1.get(Calendar.YEAR);
+            	
+            	pageNumber = 0;
+            	hasNextPage = true; 
+            	
+            	while(hasNextPage)
+            	{
+            		
+            		pageNumber++;
+            	
+	            	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=" + pageNumber + "&tip=Hisse&gun="+ gun + "&ay=" + ay + "&yil=" + yil;
+	            
+	            	System.out.println("URL : " + url);
+	            	
+		            doc = getWebData(url);
+		
+		            // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
+		            // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
+		            
+		            System.out.println(doc.title());
+		            
+		            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
+		            Element table = doc.select("table").first();                     //verinin kendisi
+		            Element pager = doc.select(".pager").first();                    //
+		            
+		            Elements rows = table.getElementsByTag("tr");
+		            	            	            
+		            
+		            if(pageNumber==1) 
+		            {
+			            for(Element col: rows.get(0).getElementsByTag("th")) 
+			            {
+			            	System.out.printf("%15s", col.text());
+			            }
+			            System.out.printf("%15s\n", "Tarih");
+		            }
+	
+		            
+		            for(int i=1; i<rows.size(); i++) 
+		            {
+		            	Element row = rows.get(i);
+		            	Elements cols = row.getElementsByTag("td");
+		            
+		            	//System.out.println("");
+		            	for(int j=0; j<cols.size(); j++) 
+		            	{
+		            		String text = cols.get(j).text();
+		            		System.out.printf("%15s", text + "  ");
+		            	}
+		            	
+		            	System.out.printf("%15s", gun + "." + ay + "." + yil);
+		            }
+		            
+		            if(rows.size()<2) 
+		            	hasNextPage = false;
+            	}
+	            
+            cal1.add(Calendar.DATE, 1);
             //System.out.println(detSearch.html());
             //System.out.println(table.html());
             //System.out.println(pager.html());
-            
-            
-           // System.out.println(doc.html());
-            
+                       
+           // System.out.println(doc.html());            
             //System.out.println(doc.title());
-
-        } 
+            Thread.sleep(1000);   //1000ms = 1 sec
+ 	            
+	        } 
+        }
         catch (Exception e) 
         {
         	e.printStackTrace();
             //System.err.println("Bağlantı hatası: " + e.getMessage());
         }
+		
     }
 	
     public static void webScrapingWithSelenium() {
