@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 
 public class WebScrapingHisseSenedi {
@@ -160,56 +161,39 @@ public class WebScrapingHisseSenedi {
 		//Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
 		// ilk Tarih : 3.1.2000
 
-        try {        	       
-        	
+        try 
+        {        	               
         	Connection conn = getPostgresConnection();        	
         	Statement statement = conn.createStatement();
-        	
-        	//String url = "https://tr.investing.com/equities";
+        	        	
         	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
             // Web sitesine bağlanma ve HTML'i çekme
             Document doc = null;
+                    
+            String prmEnsonTarih = Veritabani.parametreGetir();
             
-            /*
-         // Convert Date to Calendar
-            Calendar cal1 = Calendar.getInstance();            
-            cal1.set(2000, 3, 1);  
-            Calendar cal2 = Calendar.getInstance();
-            cal2.setTime(new Date());
-            */
+            int []prmParts = Veritabani.splitDate(prmEnsonTarih);                        
             
-            LocalDate date1 = LocalDate.of(2000, 1, 2);
+            //LocalDate date1 = LocalDate.of(2002, 1, 1);
+            LocalDate date1 = LocalDate.of(prmParts[2], prmParts[1], prmParts[0]);
             LocalDate date2 = LocalDate.now();
             
             int gun, ay, yil;
             
-            boolean hasNextPage=true;            
-            int pageNumber = 1;
+            String veriZamani="";
             String aktarimZamani = null;
             
          // 2. Define your desired date pattern
-            SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-            
-            // 3. Convert Calendar to Date, then format to String
-            //String dateString = formatter.format(cal1.getTime());
-            
-            
-            //while(cal1.before(cal2)) 
+            SimpleDateFormat formatterTarihZaman = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+            DateTimeFormatter formatterTarih     = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+                                    
             while(date1.isBefore(date2))
             {
-            	/*
-            	int day =  cal1.get(Calendar.DAY_OF_WEEK);;
-            	if( day == Calendar.SATURDAY || day == Calendar.SUNDAY) 
-            	{
-            		cal1.add(Calendar.DATE, 1);
-            		day =  cal1.get(Calendar.DAY_OF_MONTH);
-            		continue;            	
-            	}            	            	
-            	gun = cal1.get(Calendar.DAY_OF_MONTH);
-            	ay = cal1.get(Calendar.MONTH);
-            	yil = cal1.get(Calendar.YEAR);
-            	*/
+            	int pageNumber = 0;
+            	boolean hasNextPage = true; 
             	
+            	//prmParts = Veritabani.splitDate(prmEnsonTarih);
+            	//date1 = LocalDate.of(prmParts[2], prmParts[1], prmParts[0]);
             	
             	DayOfWeek day =  date1.getDayOfWeek();
             	if( day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) 
@@ -223,16 +207,17 @@ public class WebScrapingHisseSenedi {
             	yil = date1.getYear();
             	
             	
-            	if(yil==2001) break;
+            	if(yil==2010) 
+            	{
+            		System.out.println("yil = " + yil + " olduğundan döngü sonlandırıldı.");
+            		break;
+            	}
             	
-            	aktarimZamani = formatter.format( Calendar.getInstance().getTime() );
-            	
-            	pageNumber = 0;
-            	hasNextPage = true; 
+            	veriZamani = gun + "." + ay + "." + yil;
+            	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );            	            	
             	
             	while(hasNextPage)
-            	{
-            		
+            	{            		
             		pageNumber++;
             	
 	            	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=" + pageNumber + "&tip=Hisse&gun="+ gun + "&ay=" + ay + "&yil=" + yil;
@@ -248,7 +233,34 @@ public class WebScrapingHisseSenedi {
 		            
 		            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
 		            Element table = doc.select("table").first();                     //verinin kendisi
-		            Element pager = doc.select(".pager").first();                    //
+		            Element pager = doc.select(".pager").first();                    //		            		             
+		            
+		            if(detSearch==null) 
+		            {			             		            		           
+		            	Veritabani.logEkle(veriZamani, "Bu tarih için veri alınamadı. detSearch alanı null geliyor.");
+		            	
+		            	date1 = date1.plusDays(1);
+			            
+			            Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
+		            	
+			            hasNextPage = false;
+		            	break;
+		            }
+		            
+		            String scrapingDay = detSearch.select("select[name=gun] option[selected]").text();
+		            String scrapingAy  = detSearch.select("select[name=ay] option[selected]").val();
+		            String scrapingYil = detSearch.select("select[name=yil] option[selected]").text();
+		            
+		            String scrapingDate = scrapingDay + "." + scrapingAy + "." +  scrapingYil;
+		            
+		            if(!veriZamani.equals(scrapingDate)) 		            
+		            {
+		            	System.out.println(veriZamani + " tarihi için borsa verisi bulunmuyor");
+		            	Veritabani.logEkle(veriZamani, "Bu tarih için veri alınamadı. veriZamani= " + veriZamani + " ile scrapingDate = " + scrapingDate + " aynı değiller.");
+		            	
+		            	hasNextPage = false;
+		            	break;
+		            }		            		            
 		            
 		            Elements rows = table.getElementsByTag("tr");
 		            	            	            
@@ -296,14 +308,14 @@ public class WebScrapingHisseSenedi {
 		            		//String text = cols.get(j).text();
 		            		System.out.printf("%15s", arr[j] + "  ");
 		            	}
-		            	String veri_zamani = gun + "." + ay + "." + yil;
-		            	arr[9]  = "to_date('" + veri_zamani + "','dd.MM.yyyy')";
+		            	
+		            	arr[9]  = "to_date('" + veriZamani + "','dd.MM.yyyy')";
 		            	arr[10] = "to_timestamp('" + aktarimZamani + "','dd.MM.yyyy HH24:MI:SS')";  
 		            	arr[11] = url;
 		            	
 		            	sql += arr[9] + ", " + arr[10] +", '" + url + "')";
 		            	
-		            	System.out.printf("%15s\n", veri_zamani);
+		            	System.out.printf("%15s\n", veriZamani);
 		            	
 		            	//System.out.println("sql = " + sql);
 		            	
@@ -314,16 +326,16 @@ public class WebScrapingHisseSenedi {
 		            if(rows.size()<2) 
 		            	hasNextPage = false;
             	}
+	            	            
+	            date1 = date1.plusDays(1);
 	            
-            //cal1.add(Calendar.DATE, 1);
-            date1 = date1.plusDays(1);
-            //System.out.println(detSearch.html());
-            //System.out.println(table.html());
-            //System.out.println(pager.html());
-                       
-           // System.out.println(doc.html());            
-            //System.out.println(doc.title());
-            Thread.sleep(1000);   //1000ms = 1 sec
+	            Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
+	            //System.out.println(detSearch.html());
+	            //System.out.println(table.html());
+	            //System.out.println(pager.html());	                       
+	           // System.out.println(doc.html());            
+	            //System.out.println(doc.title());
+	            Thread.sleep(1000);   //1000ms = 1 sec
  	            
 	        } 
         }
@@ -566,6 +578,8 @@ public class WebScrapingHisseSenedi {
 	public static void main(String[] args) {
 		//webScrapingWithSelenium3();
 		webScrapingWithJSoupUzmanPara();
+		
+		//Veritabani.parametreGuncelle("01.01.2002");
 		
 		//System.out.println(Calendar.getInstance().getTime());
 
