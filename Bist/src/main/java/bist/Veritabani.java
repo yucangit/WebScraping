@@ -2,6 +2,7 @@ package bist;
 
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,13 +10,34 @@ import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-public class Veritabani {
+public class Veritabani 
+{
+	public static Connection getPostgresConnection() 
+	{
+	    //Database parameters
+	    String jdbcUrl = "jdbc:postgresql://localhost:5432/postgres";
+	    String user = "postgres";
+	    String pass = "123456";
+	    Connection conn = null;
+		    
+	    try 
+	    {	    
+	    	conn = DriverManager.getConnection(jdbcUrl, user, pass);
+	        System.out.println("Java JDBC bağlantısı başarıyla gerçekleşti.");
+	    	//Statement statement = connection.createStatement();
+	    }
+	    catch (Exception e) 
+	    {
+			e.printStackTrace();
+		}
+	    
+	    return conn;
+    }
 
-	public static String parametreGetir() 
+	public static String parametreGetir(Connection conn) 
 	{
 		//SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");		
-		
-		Connection con = WebScrapingHisseSenedi.getPostgresConnection();
+				
 		PreparedStatement p=null;
 		ResultSet rs=null;
 		
@@ -23,7 +45,7 @@ public class Veritabani {
 		String borsaTarih="";
 		
 		try {
-			p = con.prepareStatement(sql);
+			p = conn.prepareStatement(sql);
 			rs =p.executeQuery();
 
 			if (rs.next()) 
@@ -59,15 +81,15 @@ public class Veritabani {
          return prmParts;
 	}
 
-	public static String parametreGuncelle(String zaman) 
+	public static String parametreGuncelle(Connection conn, String zaman) 
 	{
 		SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");		
 		
-		Connection conn = WebScrapingHisseSenedi.getPostgresConnection();
+		//Connection conn = WebScrapingHisseSenedi.getPostgresConnection();
 		Statement stmt=null;
 		
 		
-		String sql = "update hisse_senedi2_prm set borsa_tarih = '" + zaman + "', guncelleme_tarihi=" + "TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')";
+		String sql = "update hisse_senedi2_prm set borsa_tarih = '" + zaman + "', guncelleme_tarihi=" + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS')";
 		
 		String borsaTarihStr="";
 		
@@ -91,13 +113,13 @@ public class Veritabani {
 	}
 	
 	
-	public static void logEkle(String zaman, String log_metin) 
+	public static void logEkle(Connection conn, String zaman, String log_metin) 
 	{						
-		Connection conn = WebScrapingHisseSenedi.getPostgresConnection();
+		//Connection conn = WebScrapingHisseSenedi.getPostgresConnection();
 		Statement stmt=null;
 				
 		//insert into hisse_senedi2_log set borsa_tarih = '1.10.2003, aciklama = Bu tarih için veri alınamadı. detSearch alanı null geliyor.', guncelleme_tarihi=TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
-		String sql = "insert into hisse_senedi2_log(borsa_tarih, aciklama, guncelleme_tarihi) values('"+ zaman +"', '"+ log_metin +"', " + "TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS'))";
+		String sql = "insert into hisse_senedi2_log(borsa_tarih, aciklama, guncelleme_tarihi) values('"+ zaman +"', '"+ log_metin +"', " + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS'))";
 						
 		try {
 			stmt = conn.createStatement();	                                
@@ -117,9 +139,9 @@ public class Veritabani {
 	{
 		
 		//Veritabani.parametreGuncelle("01.01.2002");
-		String prm = parametreGetir();
+		//String prm = parametreGetir();
 		
-		System.out.println(prm);
+		//System.out.println(prm);
 		
 
 	}

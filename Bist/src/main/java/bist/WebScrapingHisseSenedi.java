@@ -131,29 +131,7 @@ public class WebScrapingHisseSenedi {
 		return doc;
         // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
         // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
-	}
-		
-	public static Connection getPostgresConnection() 
-	{
-	    //Database parameters
-	    String jdbcUrl = "jdbc:postgresql://localhost:5432/postgres";
-	    String user = "postgres";
-	    String pass = "123456";
-	    Connection conn = null;
-		    
-	    try 
-	    {	    
-	    	conn = DriverManager.getConnection(jdbcUrl, user, pass);
-	        System.out.println("Java JDBC bağlantısı başarıyla gerçekleşti.");
-	    	//Statement statement = connection.createStatement();
-	    }
-	    catch (Exception e) 
-	    {
-			e.printStackTrace();
-		}
-	    
-	    return conn;
-    }
+	}			
     
 	public static void webScrapingWithJSoupUzmanPara() {
         // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
@@ -161,16 +139,22 @@ public class WebScrapingHisseSenedi {
 		//Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
 		// ilk Tarih : 3.1.2000
 
-        try 
+		Connection conn = null;
+		String veriZamani = "";
+		String aktarimZamani = "";
+		String url = "";
+		int pageNumber = 0;
+        
+		try 
         {        	               
-        	Connection conn = getPostgresConnection();        	
+        	conn = Veritabani.getPostgresConnection();        	
         	Statement statement = conn.createStatement();
         	        	
-        	String url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
+        	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
             // Web sitesine bağlanma ve HTML'i çekme
             Document doc = null;
                     
-            String prmEnsonTarih = Veritabani.parametreGetir();
+            String prmEnsonTarih = Veritabani.parametreGetir(conn);
             
             int []prmParts = Veritabani.splitDate(prmEnsonTarih);                        
             
@@ -180,8 +164,8 @@ public class WebScrapingHisseSenedi {
             
             int gun, ay, yil;
             
-            String veriZamani="";
-            String aktarimZamani = null;
+            veriZamani="";
+            aktarimZamani = null;
             
          // 2. Define your desired date pattern
             SimpleDateFormat formatterTarihZaman = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
@@ -189,32 +173,35 @@ public class WebScrapingHisseSenedi {
                                     
             while(date1.isBefore(date2))
             {
-            	int pageNumber = 0;
+            	pageNumber = 0;
             	boolean hasNextPage = true; 
             	
             	//prmParts = Veritabani.splitDate(prmEnsonTarih);
             	//date1 = LocalDate.of(prmParts[2], prmParts[1], prmParts[0]);
             	
             	DayOfWeek day =  date1.getDayOfWeek();
-            	if( day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) 
-            	{
-            		date1 = date1.plusDays(1);
-            		day =  date1.getDayOfWeek();
-            		continue;            	
-            	}            	            	
+            	
             	gun = date1.getDayOfMonth();
-            	ay = date1.getMonthValue();
+            	ay  = date1.getMonthValue();
             	yil = date1.getYear();
             	
+            	veriZamani = gun + "." + ay + "." + yil;
+            	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );  
             	
-            	if(yil==2010) 
+            	/*
+            	if(yil==2026) 
             	{
             		System.out.println("yil = " + yil + " olduğundan döngü sonlandırıldı.");
             		break;
-            	}
+            	}*/
             	
-            	veriZamani = gun + "." + ay + "." + yil;
-            	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );            	            	
+            	if( day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) 
+            	{
+            		Veritabani.logEkle(conn, veriZamani, "Bu tarih için hafta sonu olduğu için veri alınamadı. ");
+            		date1 = date1.plusDays(1);
+            		day =  date1.getDayOfWeek();
+            		continue;            	
+            	}            	            	                      	            	            	
             	
             	while(hasNextPage)
             	{            		
@@ -237,11 +224,11 @@ public class WebScrapingHisseSenedi {
 		            
 		            if(detSearch==null) 
 		            {			             		            		           
-		            	Veritabani.logEkle(veriZamani, "Bu tarih için veri alınamadı. detSearch alanı null geliyor.");
+		            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. detSearch alanı null geliyor.");
 		            	
-		            	date1 = date1.plusDays(1);
+		            	//date1 = date1.plusDays(1);
 			            
-			            Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
+			            //Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
 		            	
 			            hasNextPage = false;
 		            	break;
@@ -256,7 +243,7 @@ public class WebScrapingHisseSenedi {
 		            if(!veriZamani.equals(scrapingDate)) 		            
 		            {
 		            	System.out.println(veriZamani + " tarihi için borsa verisi bulunmuyor");
-		            	Veritabani.logEkle(veriZamani, "Bu tarih için veri alınamadı. veriZamani= " + veriZamani + " ile scrapingDate = " + scrapingDate + " aynı değiller.");
+		            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. veriZamani= " + veriZamani + " ile scrapingDate = " + scrapingDate + " aynı değiller.");
 		            	
 		            	hasNextPage = false;
 		            	break;
@@ -325,11 +312,13 @@ public class WebScrapingHisseSenedi {
 		            
 		            if(rows.size()<2) 
 		            	hasNextPage = false;
+		            
+		            Thread.sleep(10);   //10ms 
             	}
 	            	            
 	            date1 = date1.plusDays(1);
 	            
-	            Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
+	            Veritabani.parametreGuncelle(conn, formatterTarih.format( date1 ));
 	            //System.out.println(detSearch.html());
 	            //System.out.println(table.html());
 	            //System.out.println(pager.html());	                       
@@ -342,8 +331,13 @@ public class WebScrapingHisseSenedi {
         catch (Exception e) 
         {
         	e.printStackTrace();
+        	
+        	Veritabani.logEkle(conn, veriZamani, "Exception oluştu : " + e.getMessage() + "URL : " + url );
+        	
             //System.err.println("Bağlantı hatası: " + e.getMessage());
         }
+		
+		System.out.println("Program Sonlandı.");
 		
     }
 	
