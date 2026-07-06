@@ -131,28 +131,145 @@ public class WebScrapingHisseSenedi {
 		return doc;
         // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
         // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
-	}			
+	}	
+	
+	public static void webScrapingTarih(Connection conn, String veriZamani) throws Exception
+	{
+		boolean hasNextPage = true;
+		int pageNumber = 0;
+		String aktarimZamani = null;
+		String url="";
+		Document doc;
+		SimpleDateFormat formatterTarihZaman = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+		
+		Statement statement = conn.createStatement();
+		
+		String gun, ay, yil;
+		
+		String []arrZaman = veriZamani.split("\\.");
+		gun = arrZaman[0];
+		ay  = arrZaman[1];
+		yil = arrZaman[2];
+		
+		while(hasNextPage)
+    	{            		
+    		pageNumber++;
+    	
+        	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=" + pageNumber + "&tip=Hisse&gun="+ gun + "&ay=" + ay + "&yil=" + yil;
+        
+        	System.out.println("URL : " + url);
+        	
+            doc = getWebData(url);
+
+            // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
+            // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
+            
+            System.out.println(doc.title());
+            
+            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
+            Element table = doc.select("table").first();                     //verinin kendisi
+            Element pager = doc.select(".pager").first();                    //		            		             
+            
+            if(detSearch==null) 
+            {			             		            		           
+            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. detSearch alanı null geliyor.");            		                        	
+	            hasNextPage = false;
+            	break;
+            }
+            
+            String scrapingDay = detSearch.select("select[name=gun] option[selected]").text();
+            String scrapingAy  = detSearch.select("select[name=ay] option[selected]").val();
+            String scrapingYil = detSearch.select("select[name=yil] option[selected]").text();
+            
+            String scrapingDate = scrapingDay + "." + scrapingAy + "." +  scrapingYil;
+            
+            if(!veriZamani.equals(scrapingDate)) 		            
+            {
+            	System.out.println(veriZamani + " tarihi için borsa verisi bulunmuyor");
+            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. veriZamani= " + veriZamani + " ile scrapingDate = " + scrapingDate + " aynı değiller.");
+            	
+            	hasNextPage = false;
+            	break;
+            }		            		            
+            
+            Elements rows = table.getElementsByTag("tr");
+            	            	                        
+            //Table header kısmı
+            if(pageNumber==1) 
+            {
+	            for(Element col: rows.get(0).getElementsByTag("th")) 
+	            {
+	            	System.out.printf("%15s", col.text());
+	            }
+	            System.out.printf("%15s\n", "Tarih");
+            }
+
+            //Table data kısmı
+            for(int i=1; i<rows.size(); i++) 
+            {
+            	Element row = rows.get(i);
+            	Elements cols = row.getElementsByTag("td");
+            	
+            	String [] arr = //new String[10];
+            	
+                	{
+                		cols.get(0).text(),   //Firma Adı 
+                		cols.get(1).text(),   //Son
+                		cols.get(2).text(),   //dun
+                		cols.get(3).text(),   //yuzde
+                		cols.get(4).text(),   //yuksek
+                		cols.get(5).text(),    //dusuk,
+                		cols.get(6).text(),    //Ağ. Ort.,
+                		cols.get(7).text(),   //Hacim lot
+                		cols.get(8).text(),   //Hacim Bin TL
+                		"",   //zaman,
+                		"",   //veri aktarım zamanı
+                		""    //url		                				                		
+                	};
+            	
+            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, veri_zaman, aktarim_zamani, url) values(";
+            
+            	//System.out.println("");
+            	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );  
+            	
+            	for(int j=0; j<cols.size(); j++)   //8 kolon var
+            	{
+            		sql += "'"+ arr[j] +"', ";
+            		System.out.printf("%15s", arr[j] + "  ");
+            	}
+            	
+            	arr[9]  = "to_date('" + veriZamani + "','dd.MM.yyyy')";
+            	arr[10] = "to_timestamp('" + aktarimZamani + "','dd.MM.yyyy HH24:MI:SS')";  
+            	arr[11] = url;
+            	
+            	sql += arr[9] + ", " + arr[10] +", '" + url + "')";
+            	
+            	System.out.printf("%15s\n", veriZamani);
+            	
+            	//System.out.println("sql = " + sql);            	
+            	//int kayitSayisi = statement.executeUpdate(sql);
+            	statement.executeUpdate(sql);
+            }            
+            if(rows.size()<2) 
+            	hasNextPage = false;                         
+    	}
+	}
     
-	public static void webScrapingWithJSoupUzmanPara() {
+	public static void webScrapingWithJSoupUzmanPara() 
+	{
         // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
         
-		//Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
+		// Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
 		// ilk Tarih : 3.1.2000
 
 		Connection conn = null;
-		String veriZamani = "";
-		String aktarimZamani = "";
-		String url = "";
-		int pageNumber = 0;
+		String veriZamani = "";		
         
 		try 
         {        	               
         	conn = Veritabani.getPostgresConnection();        	
-        	Statement statement = conn.createStatement();
-        	        	
-        	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=";
+        	
             // Web sitesine bağlanma ve HTML'i çekme
-            Document doc = null;
                     
             String prmEnsonTarih = Veritabani.parametreGetir(conn);
             
@@ -164,17 +281,13 @@ public class WebScrapingHisseSenedi {
             
             int gun, ay, yil;
             
-            veriZamani="";
-            aktarimZamani = null;
+            veriZamani="";            
             
-         // 2. Define your desired date pattern
-            SimpleDateFormat formatterTarihZaman = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
-            DateTimeFormatter formatterTarih     = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+         // 2. Define your desired date pattern            
+            DateTimeFormatter formatterTarih = DateTimeFormatter.ofPattern("dd.MM.yyyy");
                                     
             while(date1.isBefore(date2))
-            {
-            	pageNumber = 0;
-            	boolean hasNextPage = true; 
+            {            	
             	
             	//prmParts = Veritabani.splitDate(prmEnsonTarih);
             	//date1 = LocalDate.of(prmParts[2], prmParts[1], prmParts[0]);
@@ -186,8 +299,7 @@ public class WebScrapingHisseSenedi {
             	yil = date1.getYear();
             	
             	veriZamani = gun + "." + ay + "." + yil;
-            	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );  
-            	
+            	              	
             	/*
             	if(yil==2026) 
             	{
@@ -203,118 +315,7 @@ public class WebScrapingHisseSenedi {
             		continue;            	
             	}            	            	                      	            	            	
             	
-            	while(hasNextPage)
-            	{            		
-            		pageNumber++;
-            	
-	            	url = "https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=" + pageNumber + "&tip=Hisse&gun="+ gun + "&ay=" + ay + "&yil=" + yil;
-	            
-	            	System.out.println("URL : " + url);
-	            	
-		            doc = getWebData(url);
-		
-		            // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
-		            // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
-		            
-		            System.out.println(doc.title());
-		            
-		            Element detSearch = doc.select(".detSearch").first();            //verinin ait olduğu gün bilgisi bulunuyor
-		            Element table = doc.select("table").first();                     //verinin kendisi
-		            Element pager = doc.select(".pager").first();                    //		            		             
-		            
-		            if(detSearch==null) 
-		            {			             		            		           
-		            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. detSearch alanı null geliyor.");
-		            	
-		            	//date1 = date1.plusDays(1);
-			            
-			            //Veritabani.parametreGuncelle(formatterTarih.format( date1 ));
-		            	
-			            hasNextPage = false;
-		            	break;
-		            }
-		            
-		            String scrapingDay = detSearch.select("select[name=gun] option[selected]").text();
-		            String scrapingAy  = detSearch.select("select[name=ay] option[selected]").val();
-		            String scrapingYil = detSearch.select("select[name=yil] option[selected]").text();
-		            
-		            String scrapingDate = scrapingDay + "." + scrapingAy + "." +  scrapingYil;
-		            
-		            if(!veriZamani.equals(scrapingDate)) 		            
-		            {
-		            	System.out.println(veriZamani + " tarihi için borsa verisi bulunmuyor");
-		            	Veritabani.logEkle(conn, veriZamani, "Bu tarih için veri alınamadı. veriZamani= " + veriZamani + " ile scrapingDate = " + scrapingDate + " aynı değiller.");
-		            	
-		            	hasNextPage = false;
-		            	break;
-		            }		            		            
-		            
-		            Elements rows = table.getElementsByTag("tr");
-		            	            	            
-		            
-		            //Table header kısmı
-		            if(pageNumber==1) 
-		            {
-			            for(Element col: rows.get(0).getElementsByTag("th")) 
-			            {
-			            	System.out.printf("%15s", col.text());
-			            }
-			            System.out.printf("%15s\n", "Tarih");
-		            }
-	
-		            //Table data kısmı
-		            for(int i=1; i<rows.size(); i++) 
-		            {
-		            	Element row = rows.get(i);
-		            	Elements cols = row.getElementsByTag("td");
-		            	
-		            	String [] arr = //new String[10];
-		            	
-		                	{
-		                		cols.get(0).text(),   //Firma Adı 
-		                		cols.get(1).text(),   //Son
-		                		cols.get(2).text(),   //dun
-		                		cols.get(3).text(),   //yuzde
-		                		cols.get(4).text(),   //yuksek
-		                		cols.get(5).text(),    //dusuk,
-		                		cols.get(6).text(),    //Ağ. Ort.,
-		                		cols.get(7).text(),   //Hacim lot
-		                		cols.get(8).text(),   //Hacim Bin TL
-		                		"",   //zaman,
-		                		"",   //veri aktarım zamanı
-		                		""  //url		                				                		
-		                	};
-		            	
-		            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, veri_zaman, aktarim_zamani, url) values(";
-		            
-		            	//System.out.println("");
-		            	for(int j=0; j<cols.size(); j++)   //8 kolon var
-		            	{
-		            		arr[j] = cols.get(j).text();
-		            		sql += "'"+ arr[j] +"', ";
-		            		//String text = cols.get(j).text();
-		            		System.out.printf("%15s", arr[j] + "  ");
-		            	}
-		            	
-		            	arr[9]  = "to_date('" + veriZamani + "','dd.MM.yyyy')";
-		            	arr[10] = "to_timestamp('" + aktarimZamani + "','dd.MM.yyyy HH24:MI:SS')";  
-		            	arr[11] = url;
-		            	
-		            	sql += arr[9] + ", " + arr[10] +", '" + url + "')";
-		            	
-		            	System.out.printf("%15s\n", veriZamani);
-		            	
-		            	//System.out.println("sql = " + sql);
-		            	
-		            	//int kayitSayisi = statement.executeUpdate(sql);
-		            	statement.executeUpdate(sql);
-		            }
-		            
-		            if(rows.size()<2) 
-		            	hasNextPage = false;
-		            
-		            Thread.sleep(10);   //10ms 
-            	}
+            	webScrapingTarih(conn, veriZamani);
 	            	            
 	            date1 = date1.plusDays(1);
 	            
@@ -325,20 +326,20 @@ public class WebScrapingHisseSenedi {
 	           // System.out.println(doc.html());            
 	            //System.out.println(doc.title());
 	            Thread.sleep(1000);   //1000ms = 1 sec
- 	            
+	            
+	            //break; 	            
 	        } 
         }
         catch (Exception e) 
         {
         	e.printStackTrace();
         	
-        	Veritabani.logEkle(conn, veriZamani, "Exception oluştu : " + e.getMessage() + "URL : " + url );
+        	Veritabani.logEkle(conn, veriZamani, "Exception oluştu : " + e.getMessage() );
         	
             //System.err.println("Bağlantı hatası: " + e.getMessage());
         }
 		
-		System.out.println("Program Sonlandı.");
-		
+		System.out.println("Program sonlandı.");		
     }
 	
     public static void webScrapingWithSelenium() {
@@ -569,9 +570,23 @@ public class WebScrapingHisseSenedi {
         
     }
     
-	public static void main(String[] args) {
+	public static void main(String[] args) 
+	{
 		//webScrapingWithSelenium3();
-		webScrapingWithJSoupUzmanPara();
+		//webScrapingWithJSoupUzmanPara();
+				
+		
+		try 
+		{
+			Connection conn = Veritabani.getPostgresConnection();
+			//webScrapingTarih(conn,"3.7.2026");
+			webScrapingWithJSoupUzmanPara();
+		} 
+		catch (Exception e) 
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//Veritabani.parametreGuncelle("01.01.2002");
 		
