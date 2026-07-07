@@ -257,7 +257,7 @@ public class WebScrapingHisseSenedi {
     
 	public static void webScrapingWithJSoupUzmanPara() 
 	{
-        // Örnek hedef URL (kullanmak istediğiniz finans sitesi)
+        // Örnek hedef URL (kullanılmak istenilen finans sitesi)
         
 		// Temel URL  : https://uzmanpara.milliyet.com.tr/borsa/gecmis-kapanislar/?Pagenum=2&tip=Hisse&gun=3&ay=7&yil=2000&Harf=-1
 		// ilk Tarih : 3.1.2000
@@ -309,6 +309,7 @@ public class WebScrapingHisseSenedi {
             	
             	if( day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) 
             	{
+            		System.out.println("Bu tarih için hafta sonu olduğu için veri alınamadı. Tarih : " + veriZamani);
             		Veritabani.logEkle(conn, veriZamani, "Bu tarih için hafta sonu olduğu için veri alınamadı. ");
             		date1 = date1.plusDays(1);
             		day =  date1.getDayOfWeek();
@@ -572,9 +573,7 @@ public class WebScrapingHisseSenedi {
     
 	public static void main(String[] args) 
 	{
-		//webScrapingWithSelenium3();
-		//webScrapingWithJSoupUzmanPara();
-				
+		//webScrapingWithSelenium3();				
 		
 		try 
 		{
@@ -584,14 +583,8 @@ public class WebScrapingHisseSenedi {
 		} 
 		catch (Exception e) 
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
-		//Veritabani.parametreGuncelle("01.01.2002");
-		
-		//System.out.println(Calendar.getInstance().getTime());
-
+		}			
 	}
 
 }

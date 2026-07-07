@@ -44,7 +44,8 @@ public class Veritabani
 		String sql = "select borsa_tarih from hisse_senedi2_prm";
 		String borsaTarih="";
 		
-		try {
+		try 
+		{
 			p = conn.prepareStatement(sql);
 			rs =p.executeQuery();
 
@@ -54,15 +55,13 @@ public class Veritabani
 	            //borsaTarihStr = formatter.format( borsaTarih );	                
 	            System.out.println("borsa_tarih : " + borsaTarih );
 			}
-			else 
-			{
+			else 			
 				System.out.println("Parametre okunamadı");
-			}
+			
 	        
 		} 
 		catch (SQLException e) 
-		{
-		
+		{		
 			e.printStackTrace();
 		}
 		
