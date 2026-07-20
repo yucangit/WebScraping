@@ -23,7 +23,7 @@ public class Veritabani
 	    try 
 	    {	    
 	    	conn = DriverManager.getConnection(jdbcUrl, user, pass);
-	        System.out.println("Java JDBC bağlantısı başarıyla gerçekleşti.");
+	        System.out.println("Java JDBC baglantisi basariyla gerceklesti.");
 	    	//Statement statement = connection.createStatement();
 	    }
 	    catch (Exception e) 
@@ -110,8 +110,7 @@ public class Veritabani
 		
 		return borsaTarihStr ;
 	}
-	
-	
+		
 	public static void logEkle(Connection conn, String zaman, String log_metin) 
 	{						
 		//Connection conn = WebScrapingHisseSenedi.getPostgresConnection();
@@ -132,10 +131,11 @@ public class Veritabani
 			e.printStackTrace();
 		}				
 	}
-	
-	
+		
 	public static void main(String[] args) 
 	{
+		
+		getPostgresConnection();
 		
 		//Veritabani.parametreGuncelle("01.01.2002");
 		//String prm = parametreGetir();

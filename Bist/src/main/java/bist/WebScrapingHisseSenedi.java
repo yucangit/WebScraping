@@ -402,8 +402,7 @@ public class WebScrapingHisseSenedi {
         
         System.out.println("asdf");
     }
-	
-	
+		
     public static void webScrapingWithSelenium2() {
     	
     	//Calisiyor(15.06.2026)
@@ -458,8 +457,7 @@ public class WebScrapingHisseSenedi {
         
         System.out.println("asdf");
     }
-    
-	
+    	
     public static void webScrapingWithSelenium3() {
     	//Durum : Calisiyor
     	//Tarih : 19.06.2026
