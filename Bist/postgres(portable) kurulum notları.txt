@@ -1,0 +1,61 @@
+-------------------------------------------Kurulum-------------------------------------------------------------------------------------------------
+İşlem adımları: 
+Zip dosyasının içeriği "D:\programlar2\postgresql_18_4_2" dizinine çıkarılır.
+1-"D:\programlar2\postgresql_18_4_2\pgsql"  dizini altında data isminde bir klasör oluşturulur.
+2- D:\programlar2\postgresql_18_4_2\pgsql\bin
+
+3-"Data" dizini için başlangıç işlemleri yapılır.
+  pg_ctl initdb -D "D:\programlar2\postgresql_18_4_2\pgsql\data"
+  
+3.1- Hata oluşması durumunda  ( "initdb: hata: local name "Turkish_Türkiye.1254" contains non-ASCII characters" )şeklinde hata oluşursa 
+     "Denetim Masası->Bölge->Biçimler->Biçim kısmında İngilizce(Amerikan)" seçilir. Uygula+Tamam 
+  Yeni bir komut promt açılarak bu komut tekrar çalıştırılır. 	 
+  
+3.2-"Denetim Masası->Bölge->Biçimler->Biçim kısmında Türkçe" seçilir. Uygula+Tamam    
+  Bu işlem adımı sonucunda Adım1'de oluşturulan "data" klasörü içinde çeşitli dosyalar oluşuyor.
+  Yine bilgisayara giriş yapılan kullanıcı için bir kullanıcı oluşturuluyor. Kurumdaki bilgisayarda KimlikNo kullanılıyor, şifre ise boş oluyor.
+  
+4-Veritabanı başlatılır.
+   pg_ctl -D ..\data  -l logfile1.txt start
+   
+   bulunulan dizinde logfile1.txt dosyası oluşuyor.
+
+5- Test İşlemi	
+    DBeaver ile : 
+    Konsoldan   : 
+		Yöntem1: 
+			cd D:\programlar2\postgresql_18_4_2\pgsql\bin
+			psql -U KullanıcıAdı -d postgres -c "SELECT 1 as col1"
+		Yöntem2:
+			cd D:\programlar2\postgresql_18_4_2\pgsql\bin            --psql uygulamasının bulunduğu dizine gidilir.
+			psql -U KullanıcıAdı -d postgres                         --psql ile postgres isimli veritabanına bağlanılır.
+			select 1 as col1;                                        --sql çalıştırılır.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+Notlar:
+   Kurulum sonrası postgres isimli bir veritabanı oluşuyor.
+   Bilgisayar kullanıcısı ile aynı isimde tam yetkili bir kullanıcı oluşuyor.
+   Oluşan kullanıcı adına aşağıdaki "Kullanıcıları listeme" kısmındaki komut çalıştırılarak erişilebilir.
+   
+---------------------------------------------------------------------------------------------------------------------------------------------------
+Diğer bilgiler: 	
+	Kullanıcıları listeleme(Bir veritabanı üzerindeki):			
+	   Yol1:
+		  psql -d postgres -U KullanıcıAdı -c "SELECT rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin FROM pg_roles;"
+	   Yol2:
+          psql -d postgres -U KullanıcıAdı
+		  SELECT rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb, rolcanlogin FROM pg_roles;
+    Yeni bir kullanıcı oluşturma : 
+		Yol1:
+			psql -U KullanıcıAdı -d postgres -c "CREATE USER postgres_kul1 WITH LOGIN PASSWORD '123456'"
+		CREATE USER postgres_kul1 WITH LOGIN PASSWORD '123456';
+	
+	Kullanıcıya yeni yetkiler verme: 
+		ALTER ROLE kullanici_adi SUPERUSER;
+		
+	Bir kullanıcı silme : 			
+		psql -U KullanıcıAdı -d postgres -c "drop USER postgres_kul1"	
+	
+   Veritabanlarını listeleme    : psql -U username -l   
+   
+   Şema oluşturma : CREATE SCHEMA BIST_VERILERI;   

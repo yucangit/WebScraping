@@ -16,7 +16,7 @@ public class Veritabani
 	{
 	    //Database parameters
 	    String jdbcUrl = "jdbc:postgresql://localhost:5432/postgres";
-	    String user = "postgres";
+	    String user = "postgres_kul1";
 	    String pass = "123456";
 	    Connection conn = null;
 		    
