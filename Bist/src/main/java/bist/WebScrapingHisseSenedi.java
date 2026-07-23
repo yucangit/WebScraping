@@ -14,7 +14,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.io.IOException;
-
+import java.net.SocketTimeoutException;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -111,22 +111,48 @@ public class WebScrapingHisseSenedi {
         }
     }
 	
-	public static Document getWebData(String url) throws Exception 
+	public static Document getWebData(Connection conn, String url, String veriZamani) throws Exception 
 	{
     	//System.setProperty("http.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
     	//System.setProperty("https.agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+		Document doc = null;
 		
-		Document doc = Jsoup.connect(url)                    
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-                .header("Accept-Language", "en-US,en;q=0.9")
-                .header("Accept-Encoding", "gzip, deflate, br")
-                .header("Connection", "keep-alive")
-                //.header("Referer", "https://google.com")
-                .header("Referer", url)
-                .timeout(10000)
-                .ignoreHttpErrors(true) 
-                .get();
+		
+		do 
+		{
+			try 
+			{
+				doc = Jsoup.connect(url)                    
+		                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+		                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+		                .header("Accept-Language", "en-US,en;q=0.9")
+		                .header("Accept-Encoding", "gzip, deflate, br")
+		                .header("Connection", "keep-alive")
+		                //.header("Referer", "https://google.com")
+		                .header("Referer", url)
+		                .timeout(5000)   //5.000 ms( 5 sn )
+		                .ignoreHttpErrors(true) 
+		                .get();
+			}
+			catch (Exception e) 
+			{
+				e.printStackTrace();
+				
+				String msg = e.getMessage();
+				
+				Veritabani.logEkle(conn, veriZamani, "Exception oluştu : " + e.getMessage() );
+				
+				if( msg.equals("Read timed out") )
+				{			
+		            System.out.println("It is SocketTimeoutException");
+		            Thread.sleep(10000);   //10 sn
+		        }
+				else
+				{
+		             throw e;
+		        }			
+			}
+		}while(doc==null);
 
 		return doc;
         // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
@@ -159,7 +185,7 @@ public class WebScrapingHisseSenedi {
         
         	System.out.println("URL : " + url);
         	
-            doc = getWebData(url);
+            doc = getWebData(conn, url, veriZamani );
 
             // İlgili fiyat verisinin CSS sınıfı veya ID'si (Örn: .valueClass)
             // Tarayıcınızda F12 ile inceleyip doğru elementi seçmeniz gerekir
@@ -227,7 +253,7 @@ public class WebScrapingHisseSenedi {
                 		""    //url		                				                		
                 	};
             	
-            	String sql = "insert into Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, veri_zaman, aktarim_zamani, url) values(";
+            	String sql = "insert into bist_verileri.Hisse_Senedi2(firma_adi, son, dun, yuzde, yuksek, dusuk, ag_ort, hacim_lot, hacim_bin_tl, veri_zaman, aktarim_zamani, url) values(";
             
             	//System.out.println("");
             	aktarimZamani = formatterTarihZaman.format( Calendar.getInstance().getTime() );  
@@ -277,6 +303,7 @@ public class WebScrapingHisseSenedi {
             
             //LocalDate date1 = LocalDate.of(2002, 1, 1);
             LocalDate date1 = LocalDate.of(prmParts[2], prmParts[1], prmParts[0]);
+            //LocalDate date2 = LocalDate.of(2000, 1, 10);
             LocalDate date2 = LocalDate.now();
             
             int gun, ay, yil;
@@ -328,7 +355,7 @@ public class WebScrapingHisseSenedi {
 	            //System.out.println(doc.title());
 	            Thread.sleep(1000);   //1000ms = 1 sec
 	            
-	            //break; 	            
+	           // break; 	            
 	        } 
         }
         catch (Exception e) 
@@ -343,7 +370,8 @@ public class WebScrapingHisseSenedi {
 		System.out.println("Program sonlandı.");		
     }
 	
-    public static void webScrapingWithSelenium() {
+    public static void webScrapingWithSelenium() 
+    {
         // 1. Configure Chrome options for scraping
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new"); // Run background process without UI
@@ -403,7 +431,8 @@ public class WebScrapingHisseSenedi {
         System.out.println("asdf");
     }
 		
-    public static void webScrapingWithSelenium2() {
+    public static void webScrapingWithSelenium2() 
+    {
     	
     	//Calisiyor(15.06.2026)
     	
@@ -458,7 +487,8 @@ public class WebScrapingHisseSenedi {
         System.out.println("asdf");
     }
     	
-    public static void webScrapingWithSelenium3() {
+    public static void webScrapingWithSelenium3() 
+    {
     	//Durum : Calisiyor
     	//Tarih : 19.06.2026
     	//Diger : Bazen peş peşe birkaç defa calistirildiginda exception olusuyor. 

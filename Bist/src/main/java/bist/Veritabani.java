@@ -41,7 +41,7 @@ public class Veritabani
 		PreparedStatement p=null;
 		ResultSet rs=null;
 		
-		String sql = "select borsa_tarih from hisse_senedi2_prm";
+		String sql = "select borsa_tarih from bist_verileri.hisse_senedi2_prm";
 		String borsaTarih="";
 		
 		try 
@@ -88,7 +88,7 @@ public class Veritabani
 		Statement stmt=null;
 		
 		
-		String sql = "update hisse_senedi2_prm set borsa_tarih = '" + zaman + "', guncelleme_tarihi=" + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS')";
+		String sql = "update bist_verileri.hisse_senedi2_prm set borsa_tarih = '" + zaman + "', guncelleme_tarihi=" + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS')";
 		
 		String borsaTarihStr="";
 		
@@ -117,7 +117,7 @@ public class Veritabani
 		Statement stmt=null;
 				
 		//insert into hisse_senedi2_log set borsa_tarih = '1.10.2003, aciklama = Bu tarih için veri alınamadı. detSearch alanı null geliyor.', guncelleme_tarihi=TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD HH24:MI:SS')
-		String sql = "insert into hisse_senedi2_log(borsa_tarih, aciklama, guncelleme_tarihi) values('"+ zaman +"', '"+ log_metin +"', " + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS'))";
+		String sql = "insert into bist_verileri.hisse_senedi2_log(borsa_tarih, aciklama, guncelleme_tarihi) values('"+ zaman +"', '"+ log_metin +"', " + "TO_CHAR(CURRENT_TIMESTAMP, 'DD.MM.YYYY HH24:MI:SS'))";
 						
 		try {
 			stmt = conn.createStatement();	                                
@@ -142,7 +142,6 @@ public class Veritabani
 		
 		//System.out.println(prm);
 		
-
 	}
 
 }

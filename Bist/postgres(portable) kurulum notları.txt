@@ -31,6 +31,8 @@ Zip dosyasının içeriği "D:\programlar2\postgresql_18_4_2" dizinine çıkarı
 			psql -U KullanıcıAdı -d postgres                         --psql ile postgres isimli veritabanına bağlanılır.
 			select 1 as col1;                                        --sql çalıştırılır.
 
+6-Sunucunun durdurulması:
+	pg_ctl stop -D ..\data
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 Notlar:
    Kurulum sonrası postgres isimli bir veritabanı oluşuyor.
