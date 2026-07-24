@@ -6,6 +6,9 @@ import yahoofinance.YahooFinance;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
 
@@ -380,6 +383,57 @@ public class WebScrapingHisseSenedi {
 					
     }
 	
+	public static void webScrapingWithJSoupUzmanParaEksikKayitlar() throws Exception
+	{
+		Connection conn = null;
+		PreparedStatement p1 = null;              //for select
+		PreparedStatement p2 = null;              //for delete
+		ResultSet rs=null;
+		
+		String sql1 = "select borsa_Tarih from bist_verileri.hisse_senedi3_log "
+					+ "		where "
+					+ "			aciklama like '%null geliyor%' and guncelleme_tarihi > to_timestamp('24.07.2026 11:00:00','dd.MM.yyyy HH24:MI:SS') order by 1";
+		
+		String sql2 = ""; //delete statement									
+				
+		LocalDate veriZamani=null;
+		
+		try 
+		{
+			conn = Veritabani.getPostgresConnection();
+			
+			p1 = conn.prepareStatement(sql1);
+			rs = p1.executeQuery();
+
+			while ( rs.next() ) 
+			{
+				
+				veriZamani = rs.getObject("borsa_tarih", LocalDate.class);	                
+	            sql2 = "delete from bist_Verileri.hisse_senedi3 where veri_zaman = '" + veriZamani + "'";
+	            
+	            System.out.print("\nTarih : " + veriZamani);
+	            
+	            p2 = conn.prepareStatement(sql2);
+	            int silinenKayitSayisi = p2.executeUpdate();
+	            
+	            System.out.print("     " + silinenKayitSayisi);
+	            p2.close();
+	            
+	            webScrapingTarih(conn, veriZamani);	  
+	            
+	            Thread.sleep(2000);
+	           
+			}							        
+		} 
+		catch (SQLException e) 
+		{		
+			e.printStackTrace();
+		}
+		
+		return ;	
+		
+	}
+	
     public static void webScrapingWithSelenium() 
     {
         // 1. Configure Chrome options for scraping
@@ -617,7 +671,8 @@ public class WebScrapingHisseSenedi {
 		{
 			Connection conn = Veritabani.getPostgresConnection();
 			//webScrapingTarih(conn,"3.7.2026");
-			webScrapingWithJSoupUzmanPara();
+			//webScrapingWithJSoupUzmanPara();
+			webScrapingWithJSoupUzmanParaEksikKayitlar();
 		} 
 		catch (Exception e) 
 		{
